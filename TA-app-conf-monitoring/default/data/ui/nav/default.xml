@@ -1,0 +1,7 @@
+<nav color="#1b1845">
+    <view name="recent_config_changes" default='true' />
+    <view name="config_line_change" />
+    <view name="xml_line_changes" />
+  	<view name="search" />
+	<view name="dashboards" />
+</nav>

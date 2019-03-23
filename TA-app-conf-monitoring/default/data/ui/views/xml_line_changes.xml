@@ -1,0 +1,120 @@
+<form>
+  <label>XML Line Changes</label>
+  <description>Line by line config file change analysis</description>
+  <search id="base">
+    <query>
+      <![CDATA[index=$index$ sourcetype=$sourcetype$ host=$host$ source=$source$ | rex max_match=0 "(?<line>\N+)\n*" | mvexpand line | search line!="[*" | table _time line file_name file_path | rex field=line "(?<header>[^=]+[^= ]) *= *(?<value>\N*)" ]]>
+    </query>
+  </search>
+  <search id="index">
+    <query>| tstats count where index=splunk sourcetype=splunk:conf OR sourcetype=splunk:views by index sourcetype source host</query>
+  </search>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>index</label>
+      <search base="index">
+        <query>| dedup index | table index</query>
+      </search>
+      <fieldForLabel>index</fieldForLabel>
+      <fieldForValue>index</fieldForValue>
+      <default>splunk</default>
+      <initialValue>splunk</initialValue>
+    </input>
+    <input type="dropdown" token="sourcetype" searchWhenChanged="true">
+      <label>sourcetype</label>
+      <search base="index">
+        <query>| search index=$index$ | dedup sourcetype | table sourcetype</query>
+      </search>
+      <fieldForLabel>sourcetype</fieldForLabel>
+      <fieldForValue>sourcetype</fieldForValue>
+      <default>splunk:views</default>
+      <initialValue>splunk:views</initialValue>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <search base="index">
+        <query>| search index=$index$ sourcetype=$sourcetype$ | dedup host | table host</query>
+      </search>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+    </input>
+    <input type="dropdown" token="source" searchWhenChanged="true">
+      <label>source</label>
+      <search base="index">
+        <query>| search index=$index$ source!=*default* sourcetype=$sourcetype$ host=$host$ | dedup source | table source</query>
+      </search>
+      <fieldForLabel>source</fieldForLabel>
+      <fieldForValue>source</fieldForValue>
+    </input>
+    <input type="dropdown" token="file" searchWhenChanged="true">
+      <label>file</label>
+      <fieldForLabel>file</fieldForLabel>
+      <fieldForValue>file</fieldForValue>
+      <search>
+        <query>index=$index$ sourcetype=$sourcetype$ host=$host$ source=*local* source!=*etc/apps/learned* source!=*prefs* source!=*/var/log/splunk* source!=*TA-app_conf_monitoring*  |rex field=source \/"(?P&lt;file&gt;\w+)\.xml" |stats c by file |fields - c |sort file</query>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <search base="base">
+          <query>| convert ctime(_time) | chart limit=0 values(value) AS value by header _time</query>
+        </search>
+        <option name="count">50</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="header">$row.header$</set>
+          <set token="value">$click.value2$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Config Modifications</title>
+      <event>
+        <search>
+          <query>index=splunk sourcetype=$sourcetype$ host=$host$ source=$source$ |dedup _raw |diff |highlight +* -*</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="list.drilldown">none</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">0</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.sortDirection">asc</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+      </event>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Web UI User information (does not work for etc/system/local/ configs)</title>
+      <table>
+        <search>
+          <query>index=_internal host=$host$ sourcetype=splunkd_ui_access "$file$" user=* "POST"  |table _time host user clientip file</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

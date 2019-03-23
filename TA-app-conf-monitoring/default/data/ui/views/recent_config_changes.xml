@@ -1,0 +1,60 @@
+<form>
+  <label>Recent config changes</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>.conf</title>
+      <table>
+          <title>Note: for each source that has been modified all stanza are listed, one or more stanza configuration have been modified</title>
+        <search>
+          <query>index=splunk sourcetype=splunk:conf source=*local* source!=*etc/apps/learned* source!=*prefs* source!=*/var/log/splunk* source!=*TA-app_conf_monitoring* |stats min(_time) as _time earliest(host) as host by source stanza sourcetype |table _time stanza source sourcetype host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">/app/TA-app-conf-monitoring/config_line_change?form.host=$row.host$&amp;form.source=$row.source$&amp;form.stanza=$row.stanza$&amp;form.field1.earliest=$earliest$&amp;form.field1.latest=$latest$&amp;form.sourcetype=$row.sourcetype$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>.xml</title>
+      <table>
+        <search>
+          <query>index=splunk sourcetype=splunk:views source=*local* source!=*etc/apps/learned* source!=*prefs* source!=*/var/log/splunk* source!=*TA-app_conf_monitoring* |stats min(_time) as _time earliest(host) as host by source sourcetype |rex field=source \/"(?P&lt;file&gt;\w+)\.xml" |table _time file source sourcetype  host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">/app/TA-app-conf-monitoring/xml_line_changes?form.host=$row.host$&amp;form.source=$row.source$&amp;form.field1.earliest=$earliest$&amp;form.field1.latest=$latest$&amp;form.sourcetype=$row.sourcetype$&amp;form.file=$row.file$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>
